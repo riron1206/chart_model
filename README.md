@@ -8,7 +8,7 @@
 - code/make_dataset.py でデータセット作成
 - code/tf_base_class.py でモデル作成
 
-## 出力ファイルディレクトリはDドライブにコピーしてシンボリックリンク付けた
+### 出力ファイルディレクトリはDドライブにコピーしてシンボリックリンク付けた
 ```bash
-mklink /d "C:\Users\81908\jupyter_notebook\tf_2_work\stock_work\chart_model\output" "D:\work\chart_model\output"
+$ mklink /d "C:\Users\81908\jupyter_notebook\tf_2_work\stock_work\chart_model\output" "D:\work\chart_model\output"
 ```
