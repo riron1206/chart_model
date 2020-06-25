@@ -289,7 +289,8 @@ class OptunaCallback(keras.callbacks.Callback):
             # 打ち切り判定
             if self.trial.should_prune(epoch):
                 # MedianPrunerのデフォルトの設定で、最初の5trialをたたき台して使って、以降のtrialで打ち切っていく
-                raise optuna.structs.TrialPruned()
+                #raise optuna.structs.TrialPruned()
+                raise optuna.TrialPruned()
 
 
 class Objective(object):

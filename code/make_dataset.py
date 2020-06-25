@@ -1,6 +1,13 @@
 """
 株価チャートの画像をtrain/validation/test setに分ける
+Usage:
+    # JPX日経インデックス400+日経225+日経500 について
+    $ python make_dataset.py
+
+    # 全銘柄について
+    $ python make_dataset.py -o D:\work\chart_model\output\dataset\all -i D:\work\chart_model\output\orig_image_all
 """
+import argparse
 import os
 import glob
 import pathlib
@@ -77,6 +84,11 @@ def make_dataset(orig_image_dir, dataset_dir):
 
 
 if __name__ == '__main__':
-    orig_image_dir = r'C:\Users\81908\jupyter_notebook\tf_2_work\stock_work\chart_model\output\orig_image'
-    dataset_dir = r'C:\Users\81908\jupyter_notebook\tf_2_work\stock_work\chart_model\output\dataset\JPX日経インデックス400+日経225+日経500'
-    make_dataset(orig_image_dir, dataset_dir)
+    ap = argparse.ArgumentParser()
+    ap.add_argument("-o", "--output_dir", type=str,
+                    default=r'C:\Users\81908\jupyter_notebook\tf_2_work\stock_work\chart_model\output\dataset\JPX日経インデックス400+日経225+日経500')
+    ap.add_argument("-i", "--input_dir", type=str,
+                    default=r'C:\Users\81908\jupyter_notebook\tf_2_work\stock_work\chart_model\output\orig_image')
+    args = vars(ap.parse_args())
+
+    make_dataset(args['input_dir'], args['output_dir'])
