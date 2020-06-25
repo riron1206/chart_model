@@ -62,7 +62,7 @@ def make_chart(code, start_date, end_date, output_dir=None):
     df = df.dropna()
     df = df.set_index('date', drop=False)
 
-    # 最終日から15日後の株価取得し、最終日よりも5%以上高ければ「1」低ければ「0」のラベルを付ける
+    # 最終日から15日後の株価取得し、15日後の株価が最終日の5%以上高ければ「1」低ければ「0」のラベルを付ける
     last_date = df.iloc[-1]['date'].date()
     df_last_date = get_code_close(code, str(last_date), str(last_date + datetime.timedelta(days=15)))
     label = 0
