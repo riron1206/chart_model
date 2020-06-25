@@ -3,19 +3,19 @@
 - ※株価データベースと株価csvが必要
 
 ## 行った手順
-1. notebook/make_chart.ipynb でデータ作成試す
-1. notebook/make_tf_model.*.ipynb でモデル作成試す
-1. code/make_chart.py でチャート画像作成
+#### notebook/make_chart.ipynb でデータ作成試す
+#### notebook/make_tf_model.*.ipynb でモデル作成試す
+#### code/make_chart.py でチャート画像作成
 ```bash
 $ python make_chart.py
 $ python make_chart_all.py
 ```
-1. code/make_dataset.py でデータセット作成
+#### code/make_dataset.py でデータセット作成
 ```bash
 $ python make_dataset.py
 $ python make_dataset.py -o D:\work\chart_model\output\dataset\all -i D:\work\chart_model\output\orig_image_all
 ```
-1. code/tf_base_class*.py でモデル作成+パラメータチューニング
+#### code/tf_base_class*.py でモデル作成+パラメータチューニング
 ```bash
 $ python tf_base_class.py -m train
 $ python tf_base_class.py -m tuning -n_t 15 -t_out_dir D:\work\chart_model\output\model\tf_base_class_py\optuna
