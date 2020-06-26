@@ -4,17 +4,17 @@ tensorflow.kerasで分類モデル作成
 ディレクトリやパラメータはget_class_fine_tuning_parameter_base()で変更する
 Usage:
     # 指定ディレクトリについてgenerator作ってモデル学習
-    $ python tf_base_class_optuna_Xception_aug.py -m train
+    $ python tf_base_class_all_data.py -m train
 
     # 最適な学習率確認
-    $ python tf_base_class_optuna_Xception_aug.py -m is_lr_finder
+    $ python tf_base_class_all_data.py -m is_lr_finder
 
     # 指定ディレクトリについてモデル予測
-    $ python tf_base_class_optuna_Xception_aug.py -m predict
+    $ python tf_base_class_all_data.py -m predict
 
     # optunaでパラメータチューニング
     # 変更するパラメータは Objective.get_class_fine_tuning_parameter_suggestions() で変更する
-    $ python tf_base_class_optuna_Xception_aug.py -m tuning -n_t 200 -t_out_dir D:\work\chart_model\output\model\tf_base_class_py\optuna_Xception_aug
+    $ python tf_base_class_all_data.py -m tuning -n_t 200 -t_out_dir D:\work\chart_model\output\model\tf_base_class_py\optuna_Xception_aug
 """
 import os
 import sys
@@ -26,6 +26,11 @@ import optuna
 import traceback
 import pathlib
 from tqdm import tqdm
+
+# tensorflowのINFOレベルのログを出さないようにする
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+import tensorflow as tf
+from tensorflow import keras
 
 keras_py_path = r'C:\Users\81908\jupyter_notebook\tfgpu_py36_work\02_keras_py'
 sys.path.append(keras_py_path)
@@ -39,11 +44,6 @@ from transformer import tf_get_train_valid_test as get_train_valid_test
 from predicter import tf_grad_cam as grad_cam
 from predicter import tf_base_predict as base_predict
 from predicter import roc_curve, conf_matrix, ensemble_predict
-
-# tensorflowのINFOレベルのログを出さないようにする
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-import tensorflow as tf
-from tensorflow import keras
 
 
 def get_class_fine_tuning_parameter_base() -> dict:
@@ -59,7 +59,7 @@ def get_class_fine_tuning_parameter_base() -> dict:
         #'horizontal_flip': True,
         #'vertical_flip': True,
         #'shear_range': 20,
-        'zoom_range': 0.2,
+        #'zoom_range': 0.2,
         #'rotation_range': 20,
         #'channel_shift_range': 50,
         #'brightness_range': [0.3, 1.0],
@@ -72,7 +72,7 @@ def get_class_fine_tuning_parameter_base() -> dict:
         #'randaugment_N': 3,
         #'randaugment_M': 4,
         #'is_kuzushiji_gen': True,
-        #'cutmix_alpha': 1.0
+        'cutmix_alpha': 1.0
         }
 
     ## Augmentor使う場合のoption
@@ -90,7 +90,7 @@ def get_class_fine_tuning_parameter_base() -> dict:
     #}
 
     return {
-        'output_dir': r'C:\Users\81908\jupyter_notebook\tf_2_work\stock_work\chart_model\output\model\tf_base_class_py\optuna_Xception_aug',
+        'output_dir': r'C:\Users\81908\jupyter_notebook\tf_2_work\stock_work\chart_model\output\model\tf_base_class_all_py',
         'gpu_count': 1,
         'img_rows': 150,
         'img_cols': 150,
@@ -98,33 +98,33 @@ def get_class_fine_tuning_parameter_base() -> dict:
         'batch_size': 12,
         'classes': ['0', '1'],
         'num_classes': 2,
-        'train_data_dir': r'C:\Users\81908\jupyter_notebook\tf_2_work\stock_work\chart_model\output\dataset\JPX日経インデックス400+日経225+日経500\train',
-        'validation_data_dir': r'C:\Users\81908\jupyter_notebook\tf_2_work\stock_work\chart_model\output\dataset\JPX日経インデックス400+日経225+日経500\validation',
-        'test_data_dir': r'C:\Users\81908\jupyter_notebook\tf_2_work\stock_work\chart_model\output\dataset\JPX日経インデックス400+日経225+日経500\test',
+        'train_data_dir': r'C:\Users\81908\jupyter_notebook\tf_2_work\stock_work\chart_model\output\dataset\all\train',
+        'validation_data_dir': r'C:\Users\81908\jupyter_notebook\tf_2_work\stock_work\chart_model\output\dataset\all\validation',
+        'test_data_dir': r'C:\Users\81908\jupyter_notebook\tf_2_work\stock_work\chart_model\output\dataset\all\test',
         'color_mode': 'rgb',
         'class_mode': 'categorical',  # generatorのラベルをone-hotベクトルに変換する場合。generatorのラベルを0か1のどちらかに変えるだけなら'binary'
         'activation': 'softmax',
         'loss': 'categorical_crossentropy',
         'metrics': ['accuracy'],
         'model_path': None,
-        'num_epoch': 15,
+        'num_epoch': 200,
         'n_multitask': 1,  # マルチタスクのタスク数
         'multitask_pred_n_node': 1,  # マルチタスクの各クラス数
         # model param
         'weights': 'imagenet',
-        'choice_model': 'InceptionV3',
+        'choice_model': 'Xception',
         'fcpool': 'GlobalAveragePooling2D',
-        'is_skip_bn': True,
+        'is_skip_bn': False,
         'trainable': 'all',#249,
-        'efficientnet_num': 7,
+        'efficientnet_num': 3,
         # full layer param
-        'fcs': [],
-        'drop': 0.5,
+        'fcs': [512, 256],
+        'drop': 0.3,
         'is_add_batchnorm': False,# True,
         'l2_rate': 1e-4,
         # optimizer param
         'choice_optim': 'sgd',
-        'lr': 1e-1,
+        'lr': 1e-2,
         'decay': 0.0,
         'my_IDG_options': my_IDG_options,
         #'train_augmentor_options': train_augmentor_options,
@@ -194,12 +194,18 @@ def train_directory(args):
                                                            args['choice_model'],
                                                            trainable=args['trainable'],
                                                            fcpool=args['fcpool'],
+                                                           fcs=args['fcs'],
+                                                           drop=args['drop'],
                                                            activation=args['activation'],
                                                            weights=args['weights'])
     optim = define_model.get_optimizers(choice_optim=args['choice_optim'], lr=args['lr'], decay=args['decay'])
     model.compile(loss=args['loss'], optimizer=optim, metrics=args['metrics'])
 
-    cb = my_callback.get_base_cb(args['output_dir'], args['num_epoch'], early_stopping=args['num_epoch'] // 3)
+    cb = my_callback.get_base_cb(args['output_dir'], args['num_epoch'],
+                                 early_stopping=args['num_epoch'] // 3,
+                                 monitor='val_' + args['metrics'][0],
+                                 metric=args['metrics'][0],
+                                 )
 
     # lr_finder
     if args['is_lr_finder'] == True:
@@ -223,6 +229,8 @@ def train_directory(args):
         callbacks=cb)
     end_time = time.time()
     print("Elapsed Time : {:.2f}sec".format(end_time - start_time))
+
+    model.save(os.path.join(args['output_dir'], 'model_last_epoch.h5'))
 
     plot_log.plot_results(args['output_dir'],
                           os.path.join(args['output_dir'], 'tsv_logger.tsv'),
@@ -260,7 +268,7 @@ def pred_directory(args):
         d_cls.test_gen = get_train_valid_test.binary_generator_multi_output_wrapper(d_cls.test_gen)
 
     # generator predict TTA
-    load_model = keras.models.load_model(os.path.join(args['output_dir'], 'best_trial_loss.h5'))
+    load_model = keras.models.load_model(os.path.join(args['output_dir'], 'best_val_loss.h5'))
     pred_tta = base_predict.predict_tta_generator(load_model,
                                                   d_cls.test_gen,
                                                   TTA=args['TTA'],
@@ -377,8 +385,8 @@ class Objective(object):
             'batch_size': 12,
             'classes': ['0', '1'],
             'num_classes': 2,
-            'train_data_dir': r'C:\Users\81908\jupyter_notebook\tf_2_work\stock_work\chart_model\output\dataset\JPX日経インデックス400+日経225+日経500\train',
-            'validation_data_dir': r'C:\Users\81908\jupyter_notebook\tf_2_work\stock_work\chart_model\output\dataset\JPX日経インデックス400+日経225+日経500\validation',
+            'train_data_dir': r'C:\Users\81908\jupyter_notebook\tf_2_work\stock_work\chart_model\output\dataset\all\train',
+            'validation_data_dir': r'C:\Users\81908\jupyter_notebook\tf_2_work\stock_work\chart_model\output\dataset\all\validation',
             'color_mode': 'rgb',
             'class_mode': 'categorical',  # generatorのラベルをone-hotベクトルに変換する場合。generatorのラベルを0か1のどちらかに変えるだけなら'binary'
             'activation': 'softmax',
@@ -470,6 +478,8 @@ class Objective(object):
                                                                args['choice_model'],
                                                                trainable=args['trainable'],
                                                                fcpool=args['fcpool'],
+                                                               fcs=args['fcs'],
+                                                               drop=args['drop'],
                                                                activation=args['activation'],
                                                                weights=args['weights'])
         optim = define_model.get_optimizers(choice_optim=args['choice_optim'], lr=args['lr'], decay=args['decay'])
@@ -538,7 +548,7 @@ if __name__ == '__main__':
     parser.add_argument('--study_name', help="Optuna trials study name", type=str, default='study')
     parser.add_argument('-n_t', '--n_trials', help="Optuna trials number", type=int, default=2)
     parser.add_argument('-t_out_dir', '--tuning_output_dir', help="Optuna trials output_dir", type=str,
-                        default=r'D:\work\chart_model\output\model\tf_base_class_py\optuna')
+                        default=r'D:\work\chart_model\output\model\tf_base_class_all_py\optuna')
     p_args = parser.parse_args()
 
     if p_args.mode == 'train':
