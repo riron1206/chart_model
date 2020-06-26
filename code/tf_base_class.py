@@ -296,6 +296,8 @@ class Objective(object):
 
     def __init__(self, output_dir):
         self.output_dir = output_dir
+        self.trial_best_loss = 1000.0
+        self.trial_best_err = 1000.0
 
     def get_class_fine_tuning_parameter_suggestions(self, trial) -> dict:
         """
@@ -496,25 +498,22 @@ class Objective(object):
         print(args)
         # optuna v0.18以上だとtryで囲まないとエラーでtrial落ちる
         try:
-            trial_best_loss = 1000.0
-            #trial_best_err = 1000.0
-
             # train
             hist = self.trial_train_directory(trial, args)
 
             check_loss = np.min(hist.history['val_loss'])  # check_dataは小さい方が精度良いようにしておく
-            if check_loss < trial_best_loss:
-                print('check_loss, trial_best_loss:', str(check_loss), str(trial_best_loss))
-                trial_best_loss = check_loss
+            if check_loss < self.trial_best_loss:
+                print('check_loss, trial_best_loss:', str(check_loss), str(self.trial_best_loss))
+                self.trial_best_loss = check_loss
                 if os.path.exists(os.path.join(args['output_dir'], 'best_val_loss.h5')) == True:
                     shutil.copyfile(os.path.join(args['output_dir'], 'best_val_loss.h5'), os.path.join(args['output_dir'], 'best_trial_loss.h5'))
 
-            #check_err = 1.0 - np.max(hist.history['val_acc']) # check_dataは小さい方が精度良いようにしておく
-            #if check_err < trial_best_err:
-            #    print('check_err, trial_best_err:', str(check_err), str(trial_best_err))
-            #    trial_best_err = check_err
-            #    if os.path.exists(os.path.join(args['output_dir'], 'best_val_acc.h5')) == True:
-            #        shutil.copyfile(os.path.join(args['output_dir'], 'best_val_acc.h5'), os.path.join(args['output_dir'], 'best_trial_acc.h5'))
+            check_err = 1.0 - np.max(hist.history['val_acc']) # check_dataは小さい方が精度良いようにしておく
+            if check_err < self.trial_best_err:
+                print('check_err, trial_best_err:', str(check_err), str(self.trial_best_err))
+                self.trial_best_err = check_err
+                if os.path.exists(os.path.join(args['output_dir'], 'best_val_acc.h5')) == True:
+                    shutil.copyfile(os.path.join(args['output_dir'], 'best_val_acc.h5'), os.path.join(args['output_dir'], 'best_trial_acc.h5'))
 
             # acc とloss の記録
             trial.set_user_attr('loss', np.min(hist.history['loss']))
