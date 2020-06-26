@@ -4,17 +4,17 @@ tensorflow.kerasで分類モデル作成
 ディレクトリやパラメータはget_class_fine_tuning_parameter_base()で変更する
 Usage:
     # 指定ディレクトリについてgenerator作ってモデル学習
-    $ python tf_base_class_optuna_Xception.py -m train
+    $ python tf_base_class_optuna_Xception_aug.py -m train
 
     # 最適な学習率確認
-    $ python tf_base_class_optuna_Xception.py -m is_lr_finder
+    $ python tf_base_class_optuna_Xception_aug.py -m is_lr_finder
 
     # 指定ディレクトリについてモデル予測
-    $ python tf_base_class_optuna_Xception.py -m predict
+    $ python tf_base_class_optuna_Xception_aug.py -m predict
 
     # optunaでパラメータチューニング
     # 変更するパラメータは Objective.get_class_fine_tuning_parameter_suggestions() で変更する
-    $ python tf_base_class_optuna_Xception.py -m tuning -n_t 200 -t_out_dir D:\work\chart_model\output\model\tf_base_class_py\optuna_Xception
+    $ python tf_base_class_optuna_Xception_aug.py -m tuning -n_t 200 -t_out_dir D:\work\chart_model\output\model\tf_base_class_py\optuna_Xception_aug
 """
 import os
 import sys
@@ -325,7 +325,9 @@ class Objective(object):
             #'ricap_beta': trial.suggest_categorical('ricap_beta', [0.0, 0.3]),
             #'is_kuzushiji_gen': trial.suggest_categorical('is_kuzushiji_gen', [False]),
             'grayscale_prob': trial.suggest_categorical('grayscale_prob', [0.0, 0.3]),
-            #'cutmix_alpha': 1.0
+            'cutmix_alpha': trial.suggest_categorical('cutmix_alpha', [0.0, 1.0]),
+            'randaugment_N': trial.suggest_categorical('randaugment_N', [0, 3]),
+            'randaugment_M': trial.suggest_categorical('randaugment_M', [0, 4]),
         }
 
         ## Augmentor使う場合のoption
@@ -387,22 +389,18 @@ class Objective(object):
             # model param
             'weights': 'imagenet',
             'choice_model': 'Xception',
-            #'fcpool': trial.suggest_categorical('fcpool', ['attention', 'GlobalAveragePooling2D']),
             'fcpool': 'GlobalAveragePooling2D',
-            #'is_skip_bn': trial.suggest_categorical('is_skip_bn', [True, False]),
             'is_skip_bn': False,
-            'trainable': trial.suggest_categorical('trainable', ['all', 58, 116]),
+            'trainable': 'all',
             'efficientnet_num': 3,
             # full layer param
-            'fcs': trial.suggest_categorical('fcs', [[], [100], [256], [512, 256], [1024, 512, 256]]),
-            'drop': trial.suggest_categorical('drop', [0.0, 0.3, 0.5]),  # 0.0はドロップなし
-            'is_add_batchnorm': trial.suggest_categorical('is_add_batchnorm', [True, False]),
-            'l2_rate': trial.suggest_categorical('l2_rate', [1e-5, 1e-4, 1e-3]),
+            'fcs': [512, 256],
+            'drop': 0.3,  # 0.0はドロップなし
+            'is_add_batchnorm': False,
+            'l2_rate': 1e-4,
             # optimizer param
-            #'choice_optim': trial.suggest_categorical('choice_optim', ['sgd', 'adadelta', 'adam', 'adamax', 'nadam', 'adabound']),
-            'choice_optim': trial.suggest_categorical('choice_optim', ['sgd', 'adam', 'adamax']),
-            'lr': trial.suggest_categorical('lr', [1e-4, 1e-3, 1e-2, 1e-1]),
-            #'decay': trial.suggest_categorical('decay', [0.0, 1e-6, 1e-5, 1e-4]), # 各更新上の学習率減衰
+            'choice_optim': 'sgd',
+            'lr': 1e-2,
             'decay': 0.0,
             # data augment
             'my_IDG_options': my_IDG_options,
