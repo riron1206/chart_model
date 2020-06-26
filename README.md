@@ -1,6 +1,10 @@
 # チャート画像から株価予想するモデル
+
+![sample_chart.png](https://github.com/riron1206/chart_model/sample_chart.png)
+
 - 参考: https://note.com/inoichan/n/n97d0944d4e7d
 - 株価データベースと株価csvが必要
+	- https://github.com/riron1206/03.stock_repo/tree/master/sqlite_analysis
 - 02_keras_pyライブラリも必要
 	- https://github.com/riron1206/02_keras_py
 - 出力ファイルディレクトリはDドライブにコピーしてシンボリックリンク付けた
