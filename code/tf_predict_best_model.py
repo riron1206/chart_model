@@ -2,10 +2,16 @@
 bestモデルで実行日から15日後の終値が実行日の終値*1.05以上か予測
 Usage:
     # スズキについて
-    $ python predict_best_model.py -c 7269
+    $ python tf_predict_best_model.py -c 7269
+
+    # 入力画像の最終日を指定
+    $ python tf_predict_best_model.py -c 7269 -d 2020-06-10
+
+    # 数日さかのぼって実行。下記は10日さかのぼる（2020/06/01から2020/06/10を最終日として10日間毎日予測）
+    $ python tf_predict_best_model.py -c 7269 -d 2020-06-10 -t_d 10
 
     # JPX日経インデックス400 + 日経225 + 日経500種について
-    $ python predict_best_model.py
+    $ python tf_predict_best_model.py
 """
 import os
 import sys
@@ -19,8 +25,6 @@ import tempfile
 
 import matplotlib
 import matplotlib.pyplot as plt
-matplotlib.use('Agg')
-
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -32,45 +36,18 @@ from tensorflow import keras
 keras_py_path = r'C:\Users\81908\jupyter_notebook\tfgpu_py36_work\02_keras_py'
 sys.path.append(keras_py_path)
 from predicter import tf_grad_cam as grad_cam
-from predicter import tf_grad_cam as grad_cam
 from predicter import tf_base_predict as base_predict
 
-
-def table_to_df(table_name=None, sql=None, db_file_name=r'D:\DB_Browser_for_SQLite\stock.db'):
-    """sqlite3で指定テーブルのデータをDataFrameで返す"""
-    conn = sqlite3.connect(db_file_name)
-    if table_name is not None:
-        return pd.read_sql(f'SELECT * FROM {table_name}', conn)
-    elif sql is not None:
-        return pd.read_sql(sql, conn)
-    else:
-        return None
+sys.path.append(r'C:\Users\81908\jupyter_notebook\tf_2_work\stock_work\chart_model\code')
+import make_chart_all
 
 
-def get_code_close(code, start_date, end_date):
-    """DBから指定銘柄の株価取得"""
-    sql = f"""
-    SELECT
-        t.date,
-        t.close
-    FROM
-        prices AS t
-    WHERE
-        t.code = {code}
-    AND
-        t.date >= '{start_date}'
-    AND
-        t.date <= '{end_date}'
-    """
-    return table_to_df(sql=sql)
-
-
-def pred_chart(model, code, start_date, end_date, output_png=None):
+def pred_chart(model, code, start_date, end_date, output_png=None, classes=['0', '1', '2'], img_size=[150, 150, 3]):
     """株価チャートの画像作成して予測+gradcam"""
 
     # 移動平均線とるのでだいぶ前からデータ取得
     start_date_sql = start_date - datetime.timedelta(days=120)
-    df = get_code_close(code, str(start_date_sql), str(end_date))
+    df = make_chart_all.get_code_close(code, str(start_date_sql), str(end_date))
 
     # 移動平均線
     df['25MA'] = df['close'].rolling(window=25).mean()
@@ -89,37 +66,39 @@ def pred_chart(model, code, start_date, end_date, output_png=None):
         plt.plot(xdate, df['close'], color='red', linestyle='solid', linewidth=0.7)
         plt.plot(xdate, df['25MA'], color='green', linestyle='solid', linewidth=0.7)
         plt.plot(xdate, df['75MA'], color='blue', linestyle='solid', linewidth=0.7)
-        plt.tick_params(labelbottom=False,
-                        labelleft=False,
-                        labelright=False,
-                        labeltop=False)
+        plt.tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False)
         plt.savefig(output_png)
         #plt.show()
 
         # 予測
-        y, pb = base_predict.pred_from_1img(model, output_png, 150, 150,
-                                            classes=['0', '1'], show_img=True)
+        y, pb = base_predict.pred_from_1img(model, output_png, img_size[0], img_size[1],
+                                            classes=classes, show_img=True)
 
         # gradcam
-        grad_cam_img = grad_cam.image2gradcam(model, output_png)
+        _ = grad_cam.image2gradcam(model, output_png)
     return y, pb
 
 
 def get_args():
     ap = argparse.ArgumentParser()
-    ap.add_argument("-o", "--output_dir", type=str, default=r'C:\Users\81908\jupyter_notebook\tf_2_work\stock_work\chart_model\output\predict')
-    ap.add_argument("-m", "--model_path", type=str, default=r'D:\work\chart_model\output\model\tf_base_class_all_py\best_val_loss.h5')
+    ap.add_argument("-o", "--output_dir", type=str, default=r'D:\work\chart_model\output_new\predict')
+    ap.add_argument("-m", "--model_path", type=str, default=r'D:\work\chart_model\output_new\model\tf_base_class_all_py\best_val_loss.h5')
     ap.add_argument("-c", "--codes", type=int, nargs='*', default=None)
+    ap.add_argument("-d", "--date_exe", type=str, default=None)
+    ap.add_argument("-t_d", "--term_days", type=int, default=1)
     return vars(ap.parse_args())
 
 
 if __name__ == '__main__':
+    matplotlib.use('Agg')
+
     args = get_args()
 
-    os.makedirs(args['output_dir'], exist_ok=True)
+    output_img_dir = os.path.join(args['output_dir'], 'image')
+    os.makedirs(output_img_dir, exist_ok=True)
 
     # 前実行したgradcam画像削除
-    _ = [os.remove(p) for p in glob.glob(os.path.join(args['output_dir'], '*gradcam.jpg'))]
+    _ = [os.remove(p) for p in glob.glob(os.path.join(output_img_dir, '*gradcam.jpg'))]
 
     if args['codes'] is None:
         # JPX日経インデックス400 + 日経225 + 日経500種
@@ -161,26 +140,40 @@ if __name__ == '__main__':
         codes = args['codes']
 
     model = keras.models.load_model(args['model_path'], compile=False)
+    #model = None
 
-    ys = []
-    pbs = []
-    for code in codes:
+    # 実行日の指定なければ、入力画像の最終日を今日にする
+    if args['date_exe'] is None:
         today = datetime.datetime.today().strftime("%Y-%m-%d")
         d_end_date = datetime.datetime.strptime(today, '%Y-%m-%d').date()
-        d_start_date = d_end_date - datetime.timedelta(weeks=4 * 4 + 2)  # 4ヶ月半前までデータとる
+    else:
+        d_end_date = datetime.datetime.strptime(args['date_exe'], '%Y-%m-%d').date()
 
-        try:
-            output_png = os.path.join(args['output_dir'], f'{str(code)}_chart.png')
-            # 画像作成して予測
-            y, pb = pred_chart(model, code, d_start_date, d_end_date, output_png=output_png)
-            print('pred_class, probability:', y, pb)
+    date_exes = []
+    cs = []
+    ys = []
+    pbs = []
+    # args['term_days']で指定した日数前から実行繰り返す
+    for t_d in range(args['term_days']):
+        date_exe = d_end_date - datetime.timedelta(days=t_d)
+        d_start_date = date_exe - datetime.timedelta(weeks=4 * 4 + 2)  # 4ヶ月半前までデータとる
+        print(date_exe, d_start_date)
 
-            ys.append(y)
-            pbs.append(pb)
+        for code in codes:
+            try:
+                output_png = os.path.join(output_img_dir, f'{str(code)}_chart.png')
+                # 画像作成して予測
+                y, pb = pred_chart(model, code, d_start_date, d_end_date, output_png=output_png)
+                print('pred_class, probability:', y, pb)
 
-        except Exception:
-            traceback.print_exc()
-            pass
+                date_exes.append(str(d_end_date))
+                cs.append(code)
+                ys.append(y)
+                pbs.append(pb)
 
-    pred_df = pd.DataFrame({'date': str(d_end_date), 'code': codes, 'pred_y': ys, 'pred_pb': pbs})
+            except Exception:
+                traceback.print_exc()
+                pass
+
+    pred_df = pd.DataFrame({'date_exe': date_exes, 'code': cs, 'pred_y': ys, 'pred_pb': pbs})
     pred_df.to_excel(os.path.join(args['output_dir'], 'pred.xlsx'))

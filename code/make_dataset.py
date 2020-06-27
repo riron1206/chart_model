@@ -1,11 +1,8 @@
 """
 株価チャートの画像をtrain/validation/test setに分ける
 Usage:
-    # JPX日経インデックス400+日経225+日経500 について
-    $ python make_dataset.py
-
     # 全銘柄について
-    $ python make_dataset.py -o D:\work\chart_model\output\dataset\all -i D:\work\chart_model\output\orig_image_all
+    $ python make_dataset.py
 """
 import argparse
 import os
@@ -13,82 +10,65 @@ import glob
 import pathlib
 import shutil
 import random
-random.seed(42)  # 乱数シード固定
+from sklearn.model_selection import train_test_split
+seed = 42
+random.seed(seed)  # 乱数シード固定
 
 
 def make_dataset(orig_image_dir, dataset_dir):
+    """株価チャートの画像をtrain/validation/test setに分ける"""
+    # クラスごとにpng画像パス取得
+    classes = ['0', '1', '2']
+    dir_png_paths = [glob.glob(os.path.join(orig_image_dir, c, '*png')) for c in classes]
+    len_dirs = [len(png_paths) for png_paths in dir_png_paths]
 
-    paths_1 = glob.glob(os.path.join(orig_image_dir, '1', '*png'))
-    paths_0 = glob.glob(os.path.join(orig_image_dir, '0', '*png'))
-    # print([pathlib.Path(p).name for p in paths_1[:5]])
+    # 一応ランダムに並び替え
+    dir_png_paths = [random.sample(png_paths, len(png_paths)) for png_paths in dir_png_paths]
 
-    len_paths_1 = len(paths_1)
-    # len_paths_0 = len(paths_0)
-
-    # valid, testは各クラス500枚にしておく
-    valid_len, test_len = 500, 500
-    train_len = len_paths_1 - valid_len - test_len
-
-    # ランダムに並び替え
-    paths_1 = random.sample(paths_1, len(paths_1))
-    paths_0 = random.sample(paths_0, len(paths_0))
-    # print([pathlib.Path(p).name for p in paths_1[:5]])
+    # ランダムサンプリングして各クラス数合わせる
+    dir_png_paths_sampling = [random.sample(png_paths, min(len_dirs)) for png_paths in dir_png_paths]
 
     # train/vakidation/testに分ける
-    train_paths_1 = paths_1[: train_len]
-    valid_paths_1 = paths_1[train_len: train_len + valid_len]
-    test_paths_1 = paths_1[train_len + valid_len: len_paths_1]
+    val_test_size = 0.2
+    test_size = 0.5
+    for cla, png_paths in zip(classes, dir_png_paths_sampling):
+        _train, _val_test = train_test_split(png_paths,
+                                             shuffle=True,
+                                             random_state=seed,
+                                             test_size=val_test_size)
+        _val, _test = train_test_split(_val_test,
+                                       shuffle=True,
+                                       random_state=seed,
+                                       test_size=test_size)
+        # 画像コピー
+        for p in _train:
+            _dir = os.path.join(dataset_dir, 'train', cla)
+            os.makedirs(_dir, exist_ok=True)
+            copy = os.path.join(_dir, pathlib.Path(p).name)
+            shutil.copyfile(p, copy)
 
-    train_paths_0 = paths_0[: train_len]
-    valid_paths_0 = paths_0[train_len: train_len + valid_len]
-    test_paths_0 = paths_0[train_len + valid_len: len_paths_1]
+        for p in _val:
+            _dir = os.path.join(dataset_dir, 'validation', cla)
+            os.makedirs(_dir, exist_ok=True)
+            copy = os.path.join(_dir, pathlib.Path(p).name)
+            shutil.copyfile(p, copy)
 
-    # train setコピー
-    for p in train_paths_1:
-        _dir = os.path.join(dataset_dir, 'train', '1')
-        os.makedirs(_dir, exist_ok=True)
-        copy = os.path.join(_dir, pathlib.Path(p).name)
-        shutil.copyfile(p, copy)
+        for p in _test:
+            _dir = os.path.join(dataset_dir, 'test', cla)
+            os.makedirs(_dir, exist_ok=True)
+            copy = os.path.join(_dir, pathlib.Path(p).name)
+            shutil.copyfile(p, copy)
 
-    for p in train_paths_0:
-        _dir = os.path.join(dataset_dir, 'train', '0')
-        os.makedirs(_dir, exist_ok=True)
-        copy = os.path.join(_dir, pathlib.Path(p).name)
-        shutil.copyfile(p, copy)
 
-    # validation set コピー
-    for p in valid_paths_1:
-        _dir = os.path.join(dataset_dir, 'validation', '1')
-        os.makedirs(_dir, exist_ok=True)
-        copy = os.path.join(_dir, pathlib.Path(p).name)
-        shutil.copyfile(p, copy)
-
-    for p in valid_paths_0:
-        _dir = os.path.join(dataset_dir, 'validation', '0')
-        os.makedirs(_dir, exist_ok=True)
-        copy = os.path.join(_dir, pathlib.Path(p).name)
-        shutil.copyfile(p, copy)
-
-    # test set コピー
-    for p in test_paths_1:
-        _dir = os.path.join(dataset_dir, 'test', '1')
-        os.makedirs(_dir, exist_ok=True)
-        copy = os.path.join(_dir, pathlib.Path(p).name)
-        shutil.copyfile(p, copy)
-
-    for p in test_paths_0:
-        _dir = os.path.join(dataset_dir, 'test', '0')
-        os.makedirs(_dir, exist_ok=True)
-        copy = os.path.join(_dir, pathlib.Path(p).name)
-        shutil.copyfile(p, copy)
+def get_args():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("-o", "--output_dir", type=str,
+                    default=r'D:\work\chart_model\output_new\dataset\all')
+    ap.add_argument("-i", "--input_dir", type=str,
+                    default=r'D:\work\chart_model\output_new\orig_image_all')
+    return vars(ap.parse_args())
 
 
 if __name__ == '__main__':
-    ap = argparse.ArgumentParser()
-    ap.add_argument("-o", "--output_dir", type=str,
-                    default=r'C:\Users\81908\jupyter_notebook\tf_2_work\stock_work\chart_model\output\dataset\JPX日経インデックス400+日経225+日経500')
-    ap.add_argument("-i", "--input_dir", type=str,
-                    default=r'C:\Users\81908\jupyter_notebook\tf_2_work\stock_work\chart_model\output\orig_image')
-    args = vars(ap.parse_args())
-
+    args = get_args()
     make_dataset(args['input_dir'], args['output_dir'])

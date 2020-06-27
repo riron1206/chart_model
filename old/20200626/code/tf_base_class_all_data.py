@@ -14,7 +14,7 @@ Usage:
 
     # optunaでパラメータチューニング
     # 変更するパラメータは Objective.get_class_fine_tuning_parameter_suggestions() で変更する
-    $ python tf_base_class_all_data.py -m tuning -n_t 200 -t_out_dir D:\work\chart_model\output_new\model\tf_base_class_all_py\optuna
+    $ python tf_base_class_all_data.py -m tuning -n_t 200 -t_out_dir D:\work\chart_model\output\model\tf_base_class_py\optuna_Xception_aug
 """
 import os
 import sys
@@ -90,17 +90,17 @@ def get_class_fine_tuning_parameter_base() -> dict:
     #}
 
     return {
-        'output_dir': r'D:\work\chart_model\output_new\model\tf_base_class_all_py',
+        'output_dir': r'C:\Users\81908\jupyter_notebook\tf_2_work\stock_work\chart_model\output\model\tf_base_class_all_py',
         'gpu_count': 1,
         'img_rows': 150,
         'img_cols': 150,
         'channels': 3,
-        'batch_size': 24,
-        'classes': ['0', '1', '2'],
+        'batch_size': 12,
+        'classes': ['0', '1'],
         'num_classes': 2,
-        'train_data_dir': r'D:\work\chart_model\output_new\dataset\all\train',
-        'validation_data_dir': r'D:\work\chart_model\output_new\dataset\all\validation',
-        'test_data_dir': r'D:\work\chart_model\output_new\dataset\all\test',
+        'train_data_dir': r'C:\Users\81908\jupyter_notebook\tf_2_work\stock_work\chart_model\output\dataset\all\train',
+        'validation_data_dir': r'C:\Users\81908\jupyter_notebook\tf_2_work\stock_work\chart_model\output\dataset\all\validation',
+        'test_data_dir': r'C:\Users\81908\jupyter_notebook\tf_2_work\stock_work\chart_model\output\dataset\all\test',
         'color_mode': 'rgb',
         'class_mode': 'categorical',  # generatorのラベルをone-hotベクトルに変換する場合。generatorのラベルを0か1のどちらかに変えるだけなら'binary'
         'activation': 'softmax',
@@ -383,10 +383,10 @@ class Objective(object):
             'img_cols': 150,
             'channels': 3,
             'batch_size': 12,
-            'classes': ['0', '1', '2'],
+            'classes': ['0', '1'],
             'num_classes': 2,
-            'train_data_dir': r'D:\work\chart_model\output_new\dataset\all\train',
-            'validation_data_dir': r'D:\work\chart_model\output_new\dataset\all\validation',
+            'train_data_dir': r'C:\Users\81908\jupyter_notebook\tf_2_work\stock_work\chart_model\output\dataset\all\train',
+            'validation_data_dir': r'C:\Users\81908\jupyter_notebook\tf_2_work\stock_work\chart_model\output\dataset\all\validation',
             'color_mode': 'rgb',
             'class_mode': 'categorical',  # generatorのラベルをone-hotベクトルに変換する場合。generatorのラベルを0か1のどちらかに変えるだけなら'binary'
             'activation': 'softmax',
@@ -548,7 +548,7 @@ if __name__ == '__main__':
     parser.add_argument('--study_name', help="Optuna trials study name", type=str, default='study')
     parser.add_argument('-n_t', '--n_trials', help="Optuna trials number", type=int, default=2)
     parser.add_argument('-t_out_dir', '--tuning_output_dir', help="Optuna trials output_dir", type=str,
-                        default=r'D:\work\chart_model\output_new\model\tf_base_class_all_py\optuna')
+                        default=r'D:\work\chart_model\output\model\tf_base_class_all_py\optuna')
     p_args = parser.parse_args()
 
     if p_args.mode == 'train':
