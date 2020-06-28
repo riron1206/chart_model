@@ -97,7 +97,7 @@ def get_class_fine_tuning_parameter_base() -> dict:
         'channels': 3,
         'batch_size': 24,
         'classes': ['0', '1', '2'],
-        'num_classes': 2,
+        'num_classes': 3,
         'train_data_dir': r'D:\work\chart_model\output_new\dataset\all\train',
         'validation_data_dir': r'D:\work\chart_model\output_new\dataset\all\validation',
         'test_data_dir': r'D:\work\chart_model\output_new\dataset\all\test',
@@ -202,7 +202,7 @@ def train_directory(args):
     model.compile(loss=args['loss'], optimizer=optim, metrics=args['metrics'])
 
     cb = my_callback.get_base_cb(args['output_dir'], args['num_epoch'],
-                                 early_stopping=args['num_epoch'] // 3,
+                                 early_stopping=args['num_epoch'] // 4,
                                  monitor='val_' + args['metrics'][0],
                                  metric=args['metrics'][0],
                                  )
@@ -268,7 +268,8 @@ def pred_directory(args):
         d_cls.test_gen = get_train_valid_test.binary_generator_multi_output_wrapper(d_cls.test_gen)
 
     # generator predict TTA
-    load_model = keras.models.load_model(os.path.join(args['output_dir'], 'best_val_loss.h5'))
+    #load_model = keras.models.load_model(os.path.join(args['output_dir'], 'best_val_loss.h5'))
+    load_model = keras.models.load_model(os.path.join(args['output_dir'], 'best_val_accuracy.h5'))
     pred_tta = base_predict.predict_tta_generator(load_model,
                                                   d_cls.test_gen,
                                                   TTA=args['TTA'],

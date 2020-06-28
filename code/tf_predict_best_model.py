@@ -1,5 +1,8 @@
 """
-bestモデルで実行日から15日後の終値が実行日の終値*1.05以上か予測
+bestモデルで予測
+- 15日後の終値が最終日の5%以上低ければクラス「1」
+- 15日後の終値が最終日の5%以上高ければクラス「2」
+- それ以外はクラス「0」
 Usage:
     # スズキについて
     $ python tf_predict_best_model.py -c 7269
@@ -61,6 +64,10 @@ def pred_chart(model, code, start_date, end_date, output_png=None, classes=['0',
 
     # 80レコードなければチャート出さない
     if df.shape[0] >= 80:
+        df = df.tail(80)  # 最終日固定したいからtail
+        _date_exe = df.iloc[-1]['date'].date()
+        _date_exe_close = df.iloc[-1]['close']
+
         xdate = [x.date() for x in df.index]
         plt.figure(dpi=100, figsize=(1.5, 1.5))
         plt.plot(xdate, df['close'], color='red', linestyle='solid', linewidth=0.7)
@@ -76,7 +83,7 @@ def pred_chart(model, code, start_date, end_date, output_png=None, classes=['0',
 
         # gradcam
         _ = grad_cam.image2gradcam(model, output_png)
-    return y, pb
+    return y, pb, _date_exe, _date_exe_close
 
 
 def get_args():
@@ -153,27 +160,32 @@ if __name__ == '__main__':
     cs = []
     ys = []
     pbs = []
+    closes = []
     # args['term_days']で指定した日数前から実行繰り返す
     for t_d in range(args['term_days']):
         date_exe = d_end_date - datetime.timedelta(days=t_d)
         d_start_date = date_exe - datetime.timedelta(weeks=4 * 4 + 2)  # 4ヶ月半前までデータとる
-        print(date_exe, d_start_date)
+        print(d_start_date, date_exe)
 
         for code in codes:
             try:
                 output_png = os.path.join(output_img_dir, f'{str(code)}_chart.png')
                 # 画像作成して予測
-                y, pb = pred_chart(model, code, d_start_date, d_end_date, output_png=output_png)
-                print('pred_class, probability:', y, pb)
+                y, pb, _date_exe, _date_exe_close = pred_chart(model, code, d_start_date, date_exe, output_png=output_png)
+                print('pred_class, probability, date_exe, date_exe_close:', y, pb, _date_exe, _date_exe_close)
 
-                date_exes.append(str(d_end_date))
+                date_exes.append(str(_date_exe))
                 cs.append(code)
                 ys.append(y)
                 pbs.append(pb)
+                closes.append(_date_exe_close)
 
             except Exception:
                 traceback.print_exc()
                 pass
 
-    pred_df = pd.DataFrame({'date_exe': date_exes, 'code': cs, 'pred_y': ys, 'pred_pb': pbs})
+    pred_df = pd.DataFrame({'date_exe': date_exes, 'date_exe_close': closes, 'code': cs, '15_days_after_pred_y': ys, 'pred_pb': pbs})
+    pred_df = pred_df.sort_values(by='date_exe')
+    pred_df = pred_df.sort_values(by='code')
+    pred_df = pred_df.drop_duplicates().reset_index(drop=True)
     pred_df.to_excel(os.path.join(args['output_dir'], 'pred.xlsx'))

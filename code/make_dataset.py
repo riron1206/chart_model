@@ -10,15 +10,19 @@ import glob
 import pathlib
 import shutil
 import random
+
+import numpy as np
 from sklearn.model_selection import train_test_split
+
 seed = 42
 random.seed(seed)  # 乱数シード固定
+np.random.seed(seed)
 
 
-def make_dataset(orig_image_dir, dataset_dir):
+def make_dataset(orig_image_dir, dataset_dir, classes=['0', '1', '2']):
     """株価チャートの画像をtrain/validation/test setに分ける"""
     # クラスごとにpng画像パス取得
-    classes = ['0', '1', '2']
+
     dir_png_paths = [glob.glob(os.path.join(orig_image_dir, c, '*png')) for c in classes]
     len_dirs = [len(png_paths) for png_paths in dir_png_paths]
 
@@ -71,4 +75,5 @@ def get_args():
 
 if __name__ == '__main__':
     args = get_args()
+    os.makedirs(args['output_dir'], exist_ok=True)
     make_dataset(args['input_dir'], args['output_dir'])
