@@ -24,6 +24,7 @@ $ mklink /d "C:\Users\81908\jupyter_notebook\tf_2_work\stock_work\chart_model\ou
 $ python make_chart_all.py
 ```
 #### 3. code/make_dataset.py でデータセット作成
+- 時系列の取り方ではなくランダムサンプリングでtrain/validation/test set作成した
 ```bash
 $ python make_dataset.py
 ```
