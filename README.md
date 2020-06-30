@@ -25,6 +25,7 @@ $ python make_chart_all.py
 ```
 #### 3. code/make_dataset.py でデータセット作成
 - 時系列の取り方ではなくランダムサンプリングでtrain/validation/test set作成した
+- train/validation/test setでの各クラスのデータ数は均一にした
 ```bash
 $ python make_dataset.py
 ```
